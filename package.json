@@ -21,7 +21,7 @@
     },
     {
       "name": "installer",
-      "title": "Cleanup installers",
+      "title": "Cleanup Installers",
       "description": "Scan and cleanup installer files",
       "mode": "view"
     },

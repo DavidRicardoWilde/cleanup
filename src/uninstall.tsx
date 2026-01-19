@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
-import { List, Action, ActionPanel, Icon, Color, showToast, Toast, confirmAlert, Alert, environment } from "@raycast/api";
+import {
+  List,
+  Action,
+  ActionPanel,
+  Icon,
+  Color,
+  showToast,
+  Toast,
+  confirmAlert,
+  Alert,
+  environment,
+} from "@raycast/api";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
@@ -114,7 +125,7 @@ export default function UninstallApps() {
       // Remove system apps via AppleScript (administrator privileges dialog)
       if (adminApps.length > 0) {
         const adminPathsEscaped = adminApps.map((app) => `'${escapeForShell(app.path)}'`).join(" ");
-        const appleScript = `do shell script \"/bin/rm -rf ${adminPathsEscaped}\" with administrator privileges`;
+        const appleScript = `do shell script "/bin/rm -rf ${adminPathsEscaped}" with administrator privileges`;
         await execFileAsync("/usr/bin/osascript", ["-e", appleScript]);
       }
 
@@ -145,22 +156,23 @@ export default function UninstallApps() {
 
   async function selectAll() {
     const filtered = apps.filter((app) =>
-      searchText ? app.name.toLowerCase().includes(searchText.toLowerCase()) : true
+      searchText ? app.name.toLowerCase().includes(searchText.toLowerCase()) : true,
     );
-    
+
     if (filtered.length > 0) {
       const confirmed = await confirmAlert({
         title: "Warning: Dangerous Operation",
-        message: "You are about to select all applications for deletion. This action cannot be undone. Are you sure you want to proceed?",
+        message:
+          "You are about to select all applications for deletion. This action cannot be undone. Are you sure you want to proceed?",
         primaryAction: {
           title: "Select All",
           style: Alert.ActionStyle.Destructive,
         },
       });
-      
+
       if (!confirmed) return;
     }
-    
+
     setSelectedApps(new Set(filtered.map((app) => app.path)));
   }
 
@@ -169,7 +181,7 @@ export default function UninstallApps() {
   }
 
   const filteredApps = apps.filter((app) =>
-    searchText ? app.name.toLowerCase().includes(searchText.toLowerCase()) : true
+    searchText ? app.name.toLowerCase().includes(searchText.toLowerCase()) : true,
   );
 
   return (
@@ -191,10 +203,7 @@ export default function UninstallApps() {
               }}
               title={app.name}
               subtitle={app.bundleId !== "unknown" ? app.bundleId : undefined}
-              accessories={[
-                { text: app.size },
-                { text: `Last used: ${app.lastUsed}`, icon: Icon.Clock },
-              ]}
+              accessories={[{ text: app.size }, { text: `Last used: ${app.lastUsed}`, icon: Icon.Clock }]}
               actions={
                 <ActionPanel>
                   <Action
@@ -210,8 +219,18 @@ export default function UninstallApps() {
                     shortcut={{ modifiers: ["cmd"], key: "u" }}
                   />
                   <ActionPanel.Section>
-                    <Action title="Select All" icon={Icon.CheckCircle} onAction={selectAll} shortcut={{ modifiers: ["cmd"], key: "a" }} />
-                    <Action title="Deselect All" icon={Icon.Circle} onAction={deselectAll} shortcut={{ modifiers: ["cmd"], key: "d" }} />
+                    <Action
+                      title="Select All"
+                      icon={Icon.CheckCircle}
+                      onAction={selectAll}
+                      shortcut={{ modifiers: ["cmd"], key: "a" }}
+                    />
+                    <Action
+                      title="Deselect All"
+                      icon={Icon.Circle}
+                      onAction={deselectAll}
+                      shortcut={{ modifiers: ["cmd"], key: "d" }}
+                    />
                   </ActionPanel.Section>
                   <ActionPanel.Section>
                     <Action

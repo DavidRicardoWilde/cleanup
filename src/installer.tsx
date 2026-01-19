@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { List, Action, ActionPanel, Icon, Color, showToast, Toast, confirmAlert, Alert, environment } from "@raycast/api";
+import { List, Action, ActionPanel, Icon, Color, showToast, Toast, confirmAlert, Alert } from "@raycast/api";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
@@ -71,7 +70,7 @@ async function isInstallerZip(filePath: string): Promise<boolean> {
 async function scanInstallersInPath(scanPath: string, maxDepth: number, found: InstallerFile[]) {
   async function walk(currentPath: string, depth: number) {
     if (depth > maxDepth) return;
-    let entries: any[] = [];
+    let entries: Awaited<ReturnType<typeof fs.readdir>> = [];
     try {
       entries = await fs.readdir(currentPath, { withFileTypes: true });
     } catch {
@@ -117,7 +116,7 @@ async function scanAllInstallers(): Promise<InstallerFile[]> {
     await scanInstallersInPath(scanPath, INSTALLER_SCAN_MAX_DEPTH, found);
   }
   // Deduplicate and sort
-  const unique = Array.from(new Map(found.map(f => [f.filePath, f])).values());
+  const unique = Array.from(new Map(found.map((f) => [f.filePath, f])).values());
   unique.sort((a, b) => b.size - a.size);
   // Homebrew hash strip
   for (const f of unique) {
@@ -136,7 +135,6 @@ export default function InstallerCleanup() {
 
   useEffect(() => {
     loadInstallers();
-    // eslint-disable-next-line
   }, []);
 
   async function loadInstallers() {
@@ -166,7 +164,8 @@ export default function InstallerCleanup() {
     if (filtered.length > 0) {
       const confirmed = await confirmAlert({
         title: "Warning: Dangerous Operation",
-        message: "You are about to select all installer files for deletion. This action cannot be undone. Are you sure you want to proceed?",
+        message:
+          "You are about to select all installer files for deletion. This action cannot be undone. Are you sure you want to proceed?",
         primaryAction: { title: "Select All", style: Alert.ActionStyle.Destructive },
       });
       if (!confirmed) return;
@@ -180,13 +179,17 @@ export default function InstallerCleanup() {
 
   function filteredInstallers() {
     return installers.filter((f) =>
-      searchText ? f.displayName.toLowerCase().includes(searchText.toLowerCase()) : true
+      searchText ? f.displayName.toLowerCase().includes(searchText.toLowerCase()) : true,
     );
   }
 
   async function deleteSelectedInstallers() {
     if (selected.size === 0) {
-      await showToast({ style: Toast.Style.Failure, title: "No files selected", message: "Please select at least one installer file to delete" });
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "No files selected",
+        message: "Please select at least one installer file to delete",
+      });
       return;
     }
     const selectedList = installers.filter((f) => selected.has(f.filePath));
@@ -205,7 +208,7 @@ export default function InstallerCleanup() {
         await fs.unlink(file.filePath);
         deleted++;
         totalSize += file.size;
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
@@ -252,8 +255,18 @@ export default function InstallerCleanup() {
                     shortcut={{ modifiers: ["cmd"], key: "u" }}
                   />
                   <ActionPanel.Section>
-                    <Action title="Select All" icon={Icon.CheckCircle} onAction={selectAll} shortcut={{ modifiers: ["cmd"], key: "a" }} />
-                    <Action title="Deselect All" icon={Icon.Circle} onAction={deselectAll} shortcut={{ modifiers: ["cmd"], key: "d" }} />
+                    <Action
+                      title="Select All"
+                      icon={Icon.CheckCircle}
+                      onAction={selectAll}
+                      shortcut={{ modifiers: ["cmd"], key: "a" }}
+                    />
+                    <Action
+                      title="Deselect All"
+                      icon={Icon.Circle}
+                      onAction={deselectAll}
+                      shortcut={{ modifiers: ["cmd"], key: "d" }}
+                    />
                   </ActionPanel.Section>
                   <ActionPanel.Section>
                     <Action

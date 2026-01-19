@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { List, ActionPanel, Action, showToast, Toast } from "@raycast/api";
 import os from "os";
-let si: any = null;
-try { si = require("systeminformation"); } catch {}
+
+let si: typeof import("systeminformation") | null = null;
+
+(async () => {
+  try {
+    si = await import("systeminformation");
+  } catch {
+    // systeminformation not available
+  }
+})();
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -11,15 +19,18 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-async function getStatus(): Promise<{ key: string; value: string }[]> {
+async function getStatus(): Promise<Array<{ key: string; value: string }>> {
   try {
-    const items: { key: string; value: string }[] = [];
+    const items: Array<{ key: string; value: string }> = [];
     items.push({ key: "Hostname", value: os.hostname() });
     items.push({ key: "Platform", value: `${os.platform()} ${os.arch()}` });
     items.push({ key: "Uptime", value: `${Math.floor(os.uptime() / 60)} min` });
     items.push({ key: "CPU", value: os.cpus()[0]?.model || "" });
     items.push({ key: "Cores", value: `${os.cpus().length}` });
-    items.push({ key: "Memory", value: `${formatBytes(os.totalmem() - os.freemem())} / ${formatBytes(os.totalmem())}` });
+    items.push({
+      key: "Memory",
+      value: `${formatBytes(os.totalmem() - os.freemem())} / ${formatBytes(os.totalmem())}`,
+    });
 
     // systeminformation (需安装 systeminformation 依赖)
     if (si) {
@@ -33,18 +44,25 @@ async function getStatus(): Promise<{ key: string; value: string }[]> {
       if (cpu) items.push({ key: "CPU Usage", value: `${cpu.currentLoad.toFixed(1)} %` });
       if (mem) items.push({ key: "Memory Usage", value: `${formatBytes(mem.active)} / ${formatBytes(mem.total)}` });
       if (disk && Array.isArray(disk)) {
-        disk.forEach((d: any) => items.push({ key: `Disk (${d.mount})`, value: `${formatBytes(d.used)} / ${formatBytes(d.size)}` }));
+        disk.forEach((d: { mount: string; used: number; size: number }) =>
+          items.push({ key: `Disk (${d.mount})`, value: `${formatBytes(d.used)} / ${formatBytes(d.size)}` }),
+        );
       }
       if (net && Array.isArray(net)) {
-        net.forEach((n: any, i: number) => items.push({ key: `Net (${n.iface || i})`, value: `↓${(n.rx_sec/1024).toFixed(1)}KB/s ↑${(n.tx_sec/1024).toFixed(1)}KB/s` }));
+        net.forEach((n: { iface: string; rx_sec: number; tx_sec: number }, i: number) =>
+          items.push({
+            key: `Net (${n.iface || i})`,
+            value: `↓${(n.rx_sec / 1024).toFixed(1)}KB/s ↑${(n.tx_sec / 1024).toFixed(1)}KB/s`,
+          }),
+        );
       }
       if (battery && battery.hasBattery) {
         items.push({ key: "Battery", value: `${battery.percent}% ${battery.isCharging ? "(Charging)" : ""}` });
       }
     }
     return items;
-  } catch (e: any) {
-    await showToast({ style: Toast.Style.Failure, title: "Failed to get status", message: String(e) });
+  } catch (error) {
+    await showToast({ style: Toast.Style.Failure, title: "Failed to get status", message: String(error) });
     return [];
   }
 }

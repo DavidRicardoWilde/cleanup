@@ -18,7 +18,14 @@ const PROJECT_TYPES = [
   },
   {
     id: "java-kotlin",
-    fileMarkers: ["pom.xml", "build.gradle", "settings.gradle", "build.gradle.kts", "settings.gradle.kts", "gradle.properties"],
+    fileMarkers: [
+      "pom.xml",
+      "build.gradle",
+      "settings.gradle",
+      "build.gradle.kts",
+      "settings.gradle.kts",
+      "gradle.properties",
+    ],
     dirMarkers: [],
     fileSuffixes: [],
     cleanDirs: ["target", "build", ".gradle"],
@@ -121,7 +128,7 @@ async function findProjects(root: string, maxDepth = MAX_SCAN_DEPTH): Promise<st
   const found: string[] = [];
   async function walk(dir: string, depth: number) {
     if (depth > maxDepth) return;
-    let entries: any[] = [];
+    let entries: Awaited<ReturnType<typeof fs.readdir>> = [];
     try {
       entries = await fs.readdir(dir, { withFileTypes: true });
     } catch {
@@ -156,7 +163,7 @@ async function scanAllProjects(): Promise<CleanableItem[]> {
   }
   const result: CleanableItem[] = [];
   for (const projectPath of projects) {
-    let entries: any[] = [];
+    let entries: Awaited<ReturnType<typeof fs.readdir>> = [];
     try {
       entries = await fs.readdir(projectPath, { withFileTypes: true });
     } catch {
@@ -209,7 +216,6 @@ export default function DevCleaner() {
 
   useEffect(() => {
     loadItems();
-    // eslint-disable-next-line
   }, []);
 
   async function loadItems() {
@@ -239,7 +245,8 @@ export default function DevCleaner() {
     if (all.length > 0) {
       const confirmed = await confirmAlert({
         title: "Warning: Dangerous Operation",
-        message: "You are about to select all cleanable directories for deletion. This action cannot be undone. Are you sure you want to proceed?",
+        message:
+          "You are about to select all cleanable directories for deletion. This action cannot be undone. Are you sure you want to proceed?",
         primaryAction: { title: "Select All", style: Alert.ActionStyle.Destructive },
       });
       if (!confirmed) return;
@@ -257,16 +264,24 @@ export default function DevCleaner() {
         ? item.projectName.toLowerCase().includes(searchText.toLowerCase()) ||
           item.projectPath.toLowerCase().includes(searchText.toLowerCase()) ||
           item.projectTypes.some((t) => t.toLowerCase().includes(searchText.toLowerCase()))
-        : true
+        : true,
     );
   }
 
   async function deleteSelectedDirs() {
     if (selected.size === 0) {
-      await showToast({ style: Toast.Style.Failure, title: "No directories selected", message: "Please select at least one directory to delete" });
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "No directories selected",
+        message: "Please select at least one directory to delete",
+      });
       return;
     }
-    const selectedList = items.flatMap((item) => item.cleanDirs.filter((d) => selected.has(d.absPath)).map((d) => ({ ...d, projectName: item.projectName, projectPath: item.projectPath })));
+    const selectedList = items.flatMap((item) =>
+      item.cleanDirs
+        .filter((d) => selected.has(d.absPath))
+        .map((d) => ({ ...d, projectName: item.projectName, projectPath: item.projectPath })),
+    );
     const confirmed = await confirmAlert({
       title: `Delete ${selected.size} directory(s)?`,
       message: `This will permanently remove:\n${selectedList.map((d) => `• [${d.projectName}] ${d.name} (${bytesToHuman(d.size)})`).join("\n")}`,
@@ -282,7 +297,7 @@ export default function DevCleaner() {
         await fs.rm(dir.absPath, { recursive: true, force: true });
         deleted++;
         totalSize += dir.size;
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
@@ -302,7 +317,11 @@ export default function DevCleaner() {
       navigationTitle={`Dev Cleaner${selected.size > 0 ? ` (${selected.size} selected)` : ""}`}
     >
       {filtered.map((item) => (
-        <List.Section key={item.projectPath} title={`${item.projectName} [${item.projectTypes.join(", ")}]`} subtitle={item.projectPath}>
+        <List.Section
+          key={item.projectPath}
+          title={`${item.projectName} [${item.projectTypes.join(", ")}]`}
+          subtitle={item.projectPath}
+        >
           {item.cleanDirs.map((dir) => {
             const isSelected = selected.has(dir.absPath);
             return (
@@ -330,8 +349,18 @@ export default function DevCleaner() {
                       shortcut={{ modifiers: ["cmd"], key: "u" }}
                     />
                     <ActionPanel.Section>
-                      <Action title="Select All" icon={Icon.CheckCircle} onAction={selectAll} shortcut={{ modifiers: ["cmd"], key: "a" }} />
-                      <Action title="Deselect All" icon={Icon.Circle} onAction={deselectAll} shortcut={{ modifiers: ["cmd"], key: "d" }} />
+                      <Action
+                        title="Select All"
+                        icon={Icon.CheckCircle}
+                        onAction={selectAll}
+                        shortcut={{ modifiers: ["cmd"], key: "a" }}
+                      />
+                      <Action
+                        title="Deselect All"
+                        icon={Icon.Circle}
+                        onAction={deselectAll}
+                        shortcut={{ modifiers: ["cmd"], key: "d" }}
+                      />
                     </ActionPanel.Section>
                     <ActionPanel.Section>
                       <Action
